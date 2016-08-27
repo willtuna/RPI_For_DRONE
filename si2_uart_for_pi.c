@@ -1,0 +1,106 @@
+#include <stdio.h>
+#include<stdlib.h>
+#include <unistd.h>            //Used for UART
+#include <fcntl.h>            //Used for UART
+#include <termios.h>        //Used for UART
+#include <stdint.h>
+
+#define GET_CHAR_MODE 2
+#define AVAILABLE_MODE 1
+
+
+
+int uart0_open(){
+
+    static int is_close = 1;
+    static int uart0_filestream = -1;
+
+    if (is_close){
+        uart0_filestream = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY | O_NDELAY);        //Open in non blocking read/write mode
+        if (uart0_filestream == -1)
+        {
+            //ERROR - CAN'T OPEN SERIAL PORT
+            printf("Error - Unable to open UART.  Ensure it is not in use by another application\n");
+            system("PAUSE");
+            exit(-1);
+        }
+        is_close = 0;
+
+        struct termios options;
+        tcgetattr(uart0_filestream, &options);
+        options.c_cflag = B9600 | CS8 | CLOCAL | CREAD;        //<Set baud rate
+        options.c_iflag = IGNPAR;
+        options.c_oflag = 0;
+        options.c_lflag = 0;
+        tcflush(uart0_filestream, TCIFLUSH);
+        tcsetattr(uart0_filestream, TCSANOW, &options);
+    }
+
+    return uart0_filestream;
+}
+
+void uart0_send(uint8_t *buf, uint16_t len){
+
+    int uart0_filestream = -1;
+    int i, count;
+    unsigned char tx_buffer[264];
+    unsigned char *p_tx_buffer;
+
+    uart0_filestream = uart0_open();
+    p_tx_buffer = &tx_buffer[0];
+
+    for (i = 0; i < len; ++i){
+        *p_tx_buffer++ = buf[i];
+    }
+
+    if (uart0_filestream != -1)
+    {
+        count = write(uart0_filestream, &tx_buffer[0], (p_tx_buffer - &tx_buffer[0]));        //Filestream, bytes to write, number of bytes to write
+        if (count < 0)
+        {
+            printf("UART TX error\n");
+        }
+    }
+}
+
+
+
+
+
+// Already Defined above
+//#define GET_CHAR_MODE 2
+//#define AVAILABLE_MODE 1
+char my_read(int mode ,int uart0_filestream){
+		
+		static char rx_buffer[256]={'\0',0};// initialized rx_buffer
+		static char *read_ptr = rx_buffer;
+		static int rx_length;
+
+		int current_pos = read_ptr - rx_buffer;
+		if(current_pos == rx_length){ // need to refresh the buffer !!!
+				rx_length =	read(uart0_filestream, (void*)rx_buffer, 255); // also refresh rx_length
+				read_ptr = rx_buffer;// refresh read_ptr
+		}// if no data rx_length may be 0 or smaller than 0
+		
+		
+		if(mode == AVAILABLE_MODE)
+				return (char)(rx_length > 0) ; // means still could get char 
+		else if(mode == GET_CHAR_MODE)
+				return *read_ptr++;
+		else
+				printf("You Enter the wrong mode ~~ run time error");
+}
+
+
+
+int uart0_char_available()
+{
+		int uart0_filestream = uart0_open();
+		return (int)my_read(AVAILABLE_MODE,uart0_filestream);
+}
+
+char uart0_get_char()
+{
+		int uart0_filestream = uart0_open();
+		return my_read(GET_CHAR_MODE,uart0_filestream);
+}
