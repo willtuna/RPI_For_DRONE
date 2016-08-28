@@ -1,3 +1,6 @@
+#ifndef SI2_UART_FOR_PI
+#define SI2_UART_FOR_PI
+
 #include <stdio.h>
 #include<stdlib.h>
 #include <unistd.h>            //Used for UART
@@ -39,7 +42,7 @@ int uart0_open(){
     return uart0_filestream;
 }
 
-void uart0_send(uint8_t *buf, uint16_t len){
+int uart0_send(uint8_t *buf, uint16_t len){
 
     int uart0_filestream = -1;
     int i, count;
@@ -61,6 +64,8 @@ void uart0_send(uint8_t *buf, uint16_t len){
             printf("UART TX error\n");
         }
     }
+
+	return uart0_filestream;
 }
 
 
@@ -76,7 +81,7 @@ char my_read(int mode ,int uart0_filestream){
 		static char *read_ptr = rx_buffer;
 		static int rx_length;
 
-		int current_pos = read_ptr - rx_buffer;
+		int current_pos = read_ptr - rx_buffer +1 ;
 		if(current_pos == rx_length){ // need to refresh the buffer !!!
 				rx_length =	read(uart0_filestream, (void*)rx_buffer, 255); // also refresh rx_length
 				read_ptr = rx_buffer;// refresh read_ptr
@@ -95,12 +100,15 @@ char my_read(int mode ,int uart0_filestream){
 
 int uart0_char_available()
 {
-		int uart0_filestream = uart0_open();
-		return (int)my_read(AVAILABLE_MODE,uart0_filestream);
+		return (int)my_read(AVAILABLE_MODE,uart0_open());
 }
 
 char uart0_get_char()
 {
-		int uart0_filestream = uart0_open();
-		return my_read(GET_CHAR_MODE,uart0_filestream);
+		return my_read(GET_CHAR_MODE,uart0_open());
 }
+
+
+
+
+#endif
