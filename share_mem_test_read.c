@@ -24,7 +24,7 @@ int main(int argc, char const *argv[]) {
   ftruncate(fd, size);
 
   ptr = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-
+  while(1)
   printf("Here is the world %s", ptr);
 
   return 0;

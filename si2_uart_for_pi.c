@@ -30,11 +30,24 @@ int uart0_open(){
         is_close = 0;
 
         struct termios options;
-        tcgetattr(uart0_filestream, &options);
-        options.c_cflag = B9600 | CS8 | CLOCAL | CREAD;        //<Set baud rate
-        options.c_iflag = IGNPAR;
-        options.c_oflag = 0;
-        options.c_lflag = 0;
+        tcgetattr(uart0_filestream, &options);// tetch attribute of the uart0_filestream 
+        options.c_cflag = B57600 | CS8 | CLOCAL | CREAD;        //<Set baud rate
+		// control flag
+		//
+
+        options.c_iflag &= ~(IGNPAR | BRKINT | ICRNL |INLCR |PARMRK |INPCK |ISTRIP |IXON);// input flag
+		// BRKINT : generate SIGINT on BREAK
+		// ICRNL : map Carriage Return to new list 
+		// IGNPAR : ignore characters with paity error
+		// INLCR map NL to CR on inut
+		// INPCK : enable pairity checking
+		// ISTRIP : strip 8 bit off input charaters
+		// IXON : enable star/stop  output flow control
+
+        options.c_oflag &= ~(OCRNL | ONLCR | ONLRET |ONOCR |OFILL |OPOST);// output flag
+        options.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN| ISIG );// local flag
+		options.c_cflag &= ~(CSIZE | PARENB);
+		options.c_cflag |= CS8;
         tcflush(uart0_filestream, TCIFLUSH);
         tcsetattr(uart0_filestream, TCSANOW, &options);
     }
